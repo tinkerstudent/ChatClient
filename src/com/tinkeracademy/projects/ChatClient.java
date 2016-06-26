@@ -2,16 +2,15 @@ package com.tinkeracademy.projects;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 import com.tinkeracademy.projects.ChatService.ChatStatus;
 
-public class ChatClient implements ActionListener, KeyListener {
+public class ChatClient implements ActionListener, Runnable {
 
 	public JButton button;
 	
@@ -24,7 +23,7 @@ public class ChatClient implements ActionListener, KeyListener {
 	ChatStatus initStatus = ChatStatus.NO;
 	
 	public ChatClient() {
-		chatService = new ChatService();
+		chatService = new ChatService(this);
 	}
 	
 	public static void main(String[] args) {
@@ -35,13 +34,21 @@ public class ChatClient implements ActionListener, KeyListener {
 			}
 		});
 	}
+	
+	public void update() {
+		SwingUtilities.invokeLater(this);
+	}
 
+	@Override
+	public void run() {
+		updateChatHistory();
+	}
+	
 	public void createAndShowGUI() {
 		Window.show();
 		Window.addLabel("Chat Application Developed By: Tinker Academy v1.0");
 		chatHistory = Window.addTextArea("", 13, 10, false);
 		chatMessage = Window.addTextArea("<Enter Your Name>", 4, 10, true);
-		chatMessage.addKeyListener(this);
 		button = Window.addButton("Send");
 		button.addActionListener(this);
 		initStatus = chatService.initializeChatFile();
@@ -53,6 +60,7 @@ public class ChatClient implements ActionListener, KeyListener {
 				showError();
 			} else if (initStatus == ChatStatus.YES) {
 				updateChatHistory();
+				clearChatMessage();
 			} else if (initStatus == ChatStatus.NO) {
 				promptChatUser();
 			}
@@ -71,7 +79,6 @@ public class ChatClient implements ActionListener, KeyListener {
 			}
 		}
 		chatHistory.setText(entries);
-		clearChatMessage();
 	}
 	
 	public void clearChatMessage() {
@@ -107,10 +114,12 @@ public class ChatClient implements ActionListener, KeyListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		doAction();
+		if (e.getSource() == button) {
+			doMessageAction();
+		}
 	}
 	
-	public void doAction() {
+	public void doMessageAction() {
 		if (initStatus == ChatStatus.NO) {
 			String chatName = chatMessage.getText();
 			System.out.println("Your name is " + chatName);
@@ -128,19 +137,4 @@ public class ChatClient implements ActionListener, KeyListener {
 		}
 	}
 
-	@Override
-	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-			doAction();
-		}
-	}
-
-	@Override
-	public void keyTyped(KeyEvent e) {
-	}
-
-	@Override
-	public void keyReleased(KeyEvent e) {
-	}
-	
 }

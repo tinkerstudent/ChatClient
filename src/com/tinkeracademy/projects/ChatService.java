@@ -35,6 +35,8 @@ public class ChatService implements Runnable {
 	
 	public String chatUser;
 	
+	public ChatClient observer;
+	
 	public List<String> pendingChats = new ArrayList<String>();
 	
 	public ScheduledFuture<?> futureTask;
@@ -47,8 +49,13 @@ public class ChatService implements Runnable {
 		ERROR
 	}
 	
+	public ChatService(ChatClient observer) {
+		this.observer = observer;
+	}
+	
 	public void run() {
 		updateServer();
+		this.observer.update();
 	}
 	
 	public void startScheduler() {
@@ -102,12 +109,11 @@ public class ChatService implements Runnable {
 		return chatStatus;
 	}
 	
-	public ChatStatus updateChatFileLine(String line) {
+	public synchronized ChatStatus updateChatFileLine(String line) {
 		PrintWriter pw = null;
 		try {		
 			pw = new PrintWriter(new FileWriter(chatFile, true));
-			long time = System.currentTimeMillis();
-			line = time + "=" + chatUser + ": " + line; 
+			line = chatUser + ": " + line; 
 			pw.println(line);
 			pw.flush();
 			pendingChats.add(line);
@@ -173,7 +179,7 @@ public class ChatService implements Runnable {
 		return history;
 	}
 	
-	public void updateServer() {
+	public synchronized void updateServer() {
 		String line = null;
 		if (!pendingChats.isEmpty()) {
 			line = pendingChats.remove(0);
@@ -267,10 +273,6 @@ public class ChatService implements Runnable {
 		try {
 			String line = bufferedReader.readLine();
 			for (;line != null;) {
-				int index = line.indexOf("=");
-				if (index != -1) {
-					line = line.substring(index+1, line.length());
-				}
 				lines.add(line);
 				line = bufferedReader.readLine();
 			}
